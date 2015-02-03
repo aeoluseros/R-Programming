@@ -69,16 +69,20 @@ quantile(medians,c(0.025,0.975))
 #7. Regression Models
 #Casual Analysis
 #If X predicts Y, it doesn't mean that X causes Y. --> Confounding means that there may be other variables cause the seeming correlation between two interested variables.
+#Methods to minimize Confounding:Restriction, Matching, Randomization, stratification, adjustment, multivariate analysis
 #Splines, Machine Learning Via regression, permutation tests, Weighted regression, Mixed Models(random intercepts)
 #Three ways to deal with confounding: (1)fix a variable  (2)if you don't fix, you can stratify samples. (3)If can't fix a variable, randomize it
 
-#simple random sampling: 
-#stratified sampling: (1)group(stratiy) samples on certain characteristics
-#systematic sampling
-#cluster sampling:
-#convenience sampling:
-#non-probability sampling:
-#multi-stage sampling:
+###probability sampling(sampling frame is required):
+#simple random sampling: randomly pick out # of samples.(more easily implemented for natural and manufacturing populations)(unbiased and representative)
+#stratified sampling: (1)group(stratify) samples on certain characteristics (grouping like cluster sampling, groups are called strata) (2)take SRS or systematic sampling in each stratum.
+#systematic sampling: starting point is random, and then systematically take objects at a certain number apart. easier to administer than simple random samples. A good apporx of a random sample. But if there is any pattern in the sample...
+#cluster sampling: More convient than simple random sampling.Can lead to bias and non-representative if the clusters are different form each other.
+#multi-stage sampling:any combination of random sampling. like use both stratified sampling and cluster sampling
+
+###non-probability sampling includes convenience sampling and quota sampling(sampling frame isn't required)
+#convenience sampling: biased such as self-selection but quick and cheap. Like Online poll, Survey your best friends, asking for volunteers at the mall.
+#quota sampling: Quota sampling is the non probability version of stratified sampling. Stratified sampling utilizes a simple random sampling once the categories are created; quota sampling utilizes availability sampling. 
 
 #8.Practical Maching Learning
 #caret package, Correlated predictor, prediction with regression, prediction with trees, boosting, bagging, model blending, forecasting
