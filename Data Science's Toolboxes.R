@@ -137,6 +137,7 @@ which(M>0.8,arr.ind=T)
 
 #put things to the github
 #git push
+#sometimes we need to "git pull origin master" first.
 
 #sometimes we don't want to edit a version. we could create a branch:
 #git checkout -b brachname
