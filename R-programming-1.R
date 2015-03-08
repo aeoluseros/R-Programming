@@ -1,3 +1,4 @@
+setwd("D:/study/DataScience")
 if (!require("swirl")) {
   install.packages("swirl")
 }
@@ -45,6 +46,15 @@ x <- c(3, 5, 1, 10, 12, 6)
 x[x < 6] <- 0
 
 #5.Creating matrices:matrix() function
+#matrices are arrays with only 2 dimensions. #Arrays are matrices with more than 2 dimensions.
+a<-array(rnorm(2*2*10),c(2,2,10))
+class(a)  #array
+#a<-array(rnorm(2*2*10),2,2,10)  #error
+a<-matrix(rnorm(2*10),c(2,10))
+class(a)  #matrix
+a<-matrix(rnorm(2*10),2,10)
+class(a)  #matrix
+
 #matrix could contain "atomic" variables  
 m<-matrix(nrow=2,ncol=3)   # elements are NA
 dim(m)
@@ -80,6 +90,18 @@ is.nan(x)  # NaN is used for undefined mathematical operations. A NaN is also NA
 x<-c(1,2,NaN,NA,4)
 is.na(x)
 is.nan(x)
+#NA is undefined, so by definition, any comparisons to NA will be as well(undefined).
+a <- sample(c(NA, 1:5), 20, replace = TRUE)
+a
+a!=NA  #all NA's
+a=NA   #all NA's
+NA == NA #NA
+#three ways to remove NA's:
+a[!is.na(a)]  # fastest
+a[complete.cases(a)]
+na.exclude(a) #same as na.omit(a)
+b<-na.omit(a)
+as.vector(b) # remove the attr(,"na.action") and attr(,"class") sections
 
 #8. the last data type -- data frame
 #data frame is a special type of list. # every element of the list has to have the same length
