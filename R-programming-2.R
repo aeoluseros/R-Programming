@@ -30,7 +30,7 @@ for(i in 1:4){
         print(x[i])
 }
 
-for(i in length(x)){
+for(i in seq_along(x)){
         print(x[i])
 }
 
