@@ -336,6 +336,76 @@ z<-y%/%x  # matrix division
 x*z
 z%*%x  #I don't know what is this!
 
+#14.with and by and aggregate
+#The with( ) function applys an expression to a dataset.
+library(MASS)
+with(anorexia, {
+        anorex.1 <- glm(Postwt ~ Prewt + Treat + offset(Prewt),
+                        family = gaussian)
+        summary(anorex.1)
+})
+
+with(data.frame(u = c(5,10,15,20,30,40,60,80,100),
+                lot1 = c(118,58,42,35,27,25,21,19,18),
+                lot2 = c(69,35,26,21,18,16,13,12,12)),
+     list(summary(glm(lot1 ~ log(u), family = Gamma)),
+          summary(glm(lot2 ~ log(u), family = Gamma))))
+
+#The by( ) function applys a function to each level of a factor or factors
+#(an object-oriented wrapper for tapply applied to data frames).
+#by(dataframe, grouping, f,..., simplify = TRUE)
+by(warpbreaks[, 1:2], warpbreaks[,"tension"], summary)
+by(warpbreaks[, 1],   warpbreaks[, -1],       summary)
+by(warpbreaks, warpbreaks[,"tension"], function(x) lm(breaks ~ wool, data = x))
+#tapply(warpbreaks, warpbreaks[,"tension"], function(x) lm(breaks ~ wool, data = x))  #error
+
+#aggregate: Splits the data into subsets, computes summary statistics for each, and returns the result in a convenient form.
+#aggregate(matrix, grouping, f): similar to by, but instead of pretty printing the output, aggregate sticks everything into a dataframe.]
+testDF <- data.frame(v1 = c(1,3,5,7,8,3,5,NA,4,5,7,9),
+                     v2 = c(11,33,55,77,88,33,55,NA,44,55,77,99) )
+by1 <- c("red", "blue", 1, 2, NA, "big", 1, 2, "red", 1, NA, 12)
+by2 <- c("wet", "dry", 99, 95, NA, "damp", 95, 99, "red", 99, NA, NA)
+aggregate(x = testDF, by = list(by1, by2), FUN = "mean")
+# and if you want to treat NAs as a group
+fby1 <- factor(by1, exclude = "") 
+#fby1 <- factor(by1, exclude = NULL) # For a numeric x, set exclude = NULL to make NA an extra level (prints as <NA>)
+fby2 <- factor(by2, exclude = "")
+aggregate(x = testDF, by = list(fby1, fby2), FUN = "mean")
+
+
+#####15. introduction of plyr package, split-apply-combine (SAC) procedures
+#http://plyr.had.co.nz/09-user/
+#(1). regression by group
+d <- data.frame(
+        state = rep(c('NY', 'CA'), 10),
+        year = rep(1:10, 2),
+        response= rnorm(20)
+)
+# Break up d by state, then fit the specified model to each piece and
+# return a list
+#method with by
+models_by<-by(d, d$state, function(df) lm(response ~ year, data = df))
+by(models_by)
+#method with plyr
+library(plyr)
+models_plyr <- dlply(d, "state", function(df) lm(response ~ year, data = df))
+class(models_plyr)=="list"
+# Apply coef to each model and return a data frame
+ldply(models_plyr, coef)  #ldply: For each element of a list, apply function then combine results into a data frame.
+# Print the summary of each model
+l_ply(models_plyr, summary, .print = TRUE) #For each element of a list, apply function and discard results
+#(2)another example
+dd<-data.frame(matrix(rnorm(216),72,3),c(rep("A",24),rep("B",24),rep("C",24)),c(rep("J",36),rep("K",36)))
+colnames(dd) <- c("v1", "v2", "v3", "dim1", "dim2")
+ddply(dd, c("dim1","dim2"), function(df)mean(df$v1)) #group dd by c("dim1","dim2")
+ddply(dd, c("dim1","dim2"), function(df)c(mean(df$v1),mean(df$v2),mean(df$v3),sd(df$v1),sd(df$v2),sd(df$v3)))
+
+
+####replicate vector into matrix
+v = 1:10
+t(replicate(10, v))
+matrix(v,nrow=10,ncol=length(v),byrow=TRUE)
+
 ###########practice#############
 # read in data & subsetting
 x <- read.csv("C:/Users/aeoluseros/DataScience/R_Prog_data/hw1_data.csv")

@@ -202,7 +202,7 @@ DT[,list(mean(x),sum(z))]
 DT[,table(y)]
 DT[,list(y,z)]  #equivalent to DT[,c(2,3),with=FALSE]  #replace the incorrect DT[,C(2,3)]
 
-#adding new column
+###adding new column
 DT[,w:=z^2]   # := -->new function in data.table. In data frame, we need to use DF<-data.frame(DF,w=DF$z^2)
               #the nice thing is when we use data frame, a new data frame would be generated. 
               #but for data.table, we don't have to so that we could save memory

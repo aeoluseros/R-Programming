@@ -38,7 +38,7 @@ for(letter in x){
         print(letter)
 }
 
-for(i in 1:4) print(x[i])  #if for loop only has single expression, we could remove the curly braces.
+#for(i in 1:4) print(x[i])  #if for loop only has single expression, we could remove the curly braces.
 
 #while loop
 count<-0
