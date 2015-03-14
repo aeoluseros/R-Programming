@@ -175,7 +175,7 @@ DT[,c(2,3)]  #incorrecct   #this will not return the 2nd and 3rd columns.
 #we could use:
 DT[,c(2,3),with=FALSE]
 
-#DIFFERENCE BETWEEN DATA.TABLE AND DATA.FRAME
+##########DIFFERENCE BETWEEN DATA.TABLE AND DATA.FRAME#######
 DT[3]  #refers to the 3rd row , DT[3] == DT[3,]
 DF[3]  #refers to the 3rd column,  DF[3] == DF[,3]
 #DT[[3]]==DF[[3]]==DF[3] all refers to the 3rd columns

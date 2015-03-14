@@ -139,6 +139,7 @@ myplot<-function(x,y,type="l",...){
         plot(x,y,type=type,...)
 }
 #... argument is also necessary when the number of arguments passed to the function cannot be known in advance
+
 args(paste)  #paste function is used to concatenate strings together and returns a character variable
 args(cat) #cat will not return anything, it will just output to the console or another connection.
 c<-paste("a","b",sep=":")
