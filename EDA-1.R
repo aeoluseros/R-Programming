@@ -434,8 +434,12 @@ stripplot(voice.part ~ jitter(height), data = singer, aspect = 1,
 
 
 #6. ggplot2
-#aesthetic artributes: color, shape, size of geometric objects(points, lines, bars)
+#aesthetic artributes: color, shape, size of geometric objects(points,lines,bars,shapes)
 #the plot may also contain statistical transformations of the data.
+#stats: statistical transformations like binning, quantiles, smoothing
+#scales: what scale an aesthetic map uses (example, male=red, female=blue)
+        #Scales are to find how to different variables are coded, in terms of plot (make man red, make female blue).
+
 library(ggplot2)
 #the basic: qplot()  - quick plot, hides what goes on underneath, which is okay for most operations
 #ggplot() is the core function and very flexible for doing things qplot() cannot do
@@ -456,7 +460,7 @@ plot(mpg$displ, mpg$hwy)  #the same, but more ugly. Open circles as points
 #modifying aesthetics
 qplot(displ, hwy, data=mpg,color=drv)  #three kinds of drives, drv are factors #legend is added automatically
 class(mpg$drv)  #factor
-qplot(displ, hwy, data=mpg,geom=c("point","smooth"))  
+qplot(displ, hwy, data=mpg,geom=c("point","smooth"),method='lm')  
 qplot(displ, hwy, data=mpg,color=drv,geom=c("point","smooth"))  #haha, interesting
 qplot(hwy, data=mpg, geom="density")
 qplot(hwy, data=mpg, geom="density",color=drv)
@@ -471,6 +475,126 @@ qplot(hwy,data=mpg,facets=drv~.,binwidth=2) #variable on the left side of ~(tild
 qplot(displ, hwy, data=mpg,color=drv,geom=c("point","smooth"),method='lm',facets=.~drv)
 
 #(2)ggplot
+g<-ggplot(mpg,aes(displ,hwy))
+summary(g)
+print(g) #it will say: No layers in plot. It means R doesn't know how to draw the data yet.
+        #it doesn't know if you want points or if you want lines and tiles...
+p<-g+geom_point()
+print(p)
+g+geom_point()  #auto print
+g+geom_point()+geom_smooth()
+g+geom_point()+geom_smooth(method="lm")
+g+geom_point()+facet_grid(.~drv)+geom_smooth(method="lm") #order doesn't matter
+        #notice that labels are determined by the facet_grid. So make sure the metadata is then specified appropriately.
+?facet_grid
+qplot(mpg, wt, data=mtcars, facets = . ~ vs + am)
+qplot(mpg, wt, data=mtcars, facets = vs + am ~ . )
+
+mt <- ggplot(mtcars, aes(mpg, wt, colour = factor(cyl))) + geom_point()
+#Are scales shared across all facets (the default, "fixed"), or do they vary across 
+#rows ("free_x"), columns ("free_y"), or both rows and columns ("free")
+mt + facet_grid(. ~ cyl, scales = "free") 
+mt + facet_grid(vs ~ am, scales = "free")
+mt + facet_grid(vs ~ am, scales = "free_x")
+mt + facet_grid(vs ~ am, scales = "free_y")
+mt + facet_grid(vs ~ am, scales = "free", space="free")
+mt + facet_grid(vs ~ am, scales = "free", space="free_x")
+mt + facet_grid(vs ~ am, scales = "free", space="free_y")
+
+
+#Annotation
+#labels: xlab, ylab, labs, ggtitle
+#each of the "geom" functions has options to modify
+#for things that only make sense globally, use theme(): e.g.: theme(legend.position="none")
+#two standard appearance themes are included:
+        #theme_gray(): The default theme(gray background)
+        #theme_bw(): More stark/plain
+g+geom_point(color="steelblue",size=4,alpha=1/2) #alpha=1/2: use transparent points
+str(geom_point)
+#function (mapping = NULL, data = NULL, stat = "identity", position = "identity", na.rm = FALSE, ...)  
+g+geom_point(aes(color=drv),size=4,alpha=1/2) #alpha=1/2: use transparent points
+?aes
+aes(x = mpg, y = wt) #aes creates a list of unevaluated expressions.
+aes(color=drv)
+g+geom_point(aes(color=drv),size=3)+labs(title="MPG DRV")+labs(x=expression("displ"[2]),y="hwy")
+g+geom_point(aes(color=drv),size=3,alpha=1/2)+geom_smooth(size=4,linetype=3,method="lm",se=FALSE)+labs(title="MPG DRV")+labs(x=expression("displ"[2]),y="hwy")
+g+geom_point(aes(color=drv),size=3,alpha=1/2)+geom_smooth(size=2,linetype=4,method="lm",se=TRUE)+labs(title="MPG DRV")+labs(x=expression("displ"[2]),y="hwy")
+g+geom_point(aes(color=drv),size=3,alpha=1/2)+theme_bw(base_family="Times")
+?theme_bw  #theme_bw(base_size = 12, base_family = "")
+
+#examples of geom_point
+p <- ggplot(mtcars, aes(wt, mpg))
+p + geom_point()
+# Add aesthetic mappings
+p + geom_point(aes(colour = qsec))
+p + geom_point(aes(alpha = qsec))
+p + geom_point(aes(colour = factor(cyl)))
+p + geom_point(aes(shape = factor(cyl)))
+p + geom_point(aes(size = qsec))
+# Change scales
+p + geom_point(aes(colour = cyl)) + scale_colour_gradient(low = "blue")
+p + geom_point(aes(size = qsec)) + scale_size_area()
+?scale_size_area() #scale the area of points to be proportional to the value.
+p + geom_point(aes(shape = factor(cyl))) + scale_shape(solid = FALSE)
+# Set aesthetics to fixed value
+p + geom_point(colour = "red", size = 3)
+qplot(wt, mpg, data = mtcars, colour = I("red"), size = I(3))
+# Varying alpha is useful for large datasets #no transparency when alpha=1, the smaller of alpha, the more transparent of data points
+d + geom_point(alpha = 1)
+d <- ggplot(diamonds, aes(carat, price))
+d + geom_point(alpha = 1/10)
+d + geom_point(alpha = 1/20)
+d + geom_point(alpha = 1/100)
+# You can create interesting shapes by layering multiple points of
+# different sizes
+p <- ggplot(mtcars, aes(mpg, wt))
+p + geom_point(colour="grey50", size = 4) + geom_point(aes(colour = cyl))
+p + aes(shape = factor(cyl)) +
+        geom_point(aes(colour = factor(cyl)), size = 4) +
+        geom_point(colour="grey90", size = 1.5)
+p + geom_point(colour="black", size = 4.5) +
+        geom_point(colour="pink", size = 4) +
+        geom_point(aes(shape = factor(cyl)))
+# These extra layers don't usually appear in the legend, but we can
+# force their inclusion
+p + geom_point(colour="black", size = 4.5, show_guide = TRUE) +
+        geom_point(colour="pink", size = 4, show_guide = TRUE) +
+        geom_point(aes(shape = factor(cyl)))
+# Transparent points:
+qplot(mpg, wt, data = mtcars, size = I(5), alpha = I(0.2))
+# geom_point warns when missing values have been dropped from the data set
+# and not plotted, you can turn this off by setting na.rm = TRUE
+mtcars2 <- transform(mtcars, mpg = ifelse(runif(32) < 0.2, NA, mpg))
+qplot(wt, mpg, data = mtcars2)
+qplot(wt, mpg, data = mtcars2, na.rm = TRUE)
+
+#A note about Axis Limits - Coordinate
+testdata<-data.frame(x=1:100,y=rnorm(100))
+testdata[50,2]<-100   #outlier
+plot(testdata$x,testdata$y,type='l',ylim=c(-3,3))  #baes plot
+g<-ggplot(testdata,aes(x=x,y=y))
+g+geom_line()
+g+geom_line()+coord_cartesian(ylim=c(-3,3))
+
+#if we want to condition on cts variable, we first need to use cut() function to 
+ #make the cts variable categorical
+set.seed(6809)
+diamonds <- diamonds[sample(nrow(diamonds), 1000), ]
+diamonds$cut <- factor(diamonds$cut,
+                       levels = c("Ideal", "Very Good", "Fair", "Good", "Premium"))
+# Repeat first example with new order
+p <- ggplot(diamonds, aes(carat, ..density..)) +
+        geom_histogram(binwidth = 1)
+p + facet_grid(. ~ cut)
+
+mt <- ggplot(mtcars, aes(mpg, wt, colour = factor(cyl))) + geom_point()
+mt + facet_grid(. ~ cyl, scales = "free_x", space="free") +
+        scale_x_continuous(breaks = seq(10, 36, by = 2))
+last_plot() + xlim(10, 15)
+
+
+
+
 
 
 
