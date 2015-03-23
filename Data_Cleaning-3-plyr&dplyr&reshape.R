@@ -85,8 +85,10 @@ restData<-read.csv("./GetAndCleanData/restaurants.csv")
 #Creating Sequences
 s1<-seq(1,10,by=2);s1
 s2<-seq(1,10,length=3);s2
-x<-c(1,3,8,25,100); seq(along=x); 
+x<-c(1,3,8,25,100); 
+seq(along=x)
 seq_along(x) #seq_along and seq_len are very fast primitives for two common cases.
+seq_len(9)
 #add one column by subsetting
 names(restData)
 restData$nearMe<-restData$neighborhood %in% c("Rolland Park","Homeland") #nearMe column is appended
