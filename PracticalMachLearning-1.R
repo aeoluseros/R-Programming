@@ -246,7 +246,7 @@ bootFolds[[3]][1:10]
 bootFolds[[4]][1:10]
 bootFolds[[9]][1:10]
 bootFolds[[10]][1:10]
-#time slices:
+#time slices (time series):
 #createTimeSlices(y, initialWindow, horizon = 1, fixedWindow = TRUE)
    #y: For createTimeSlices, these should be in chronological order.
    #initialWindow: The initial number of consecutive values in each training set sample
@@ -287,7 +287,7 @@ args(train.default)
 #             preProcOptions = list(thresh = 0.95, ICAcomp = 3, k = 5), index = NULL, indexOut = NULL,
 #             timingSamps = 0, predictionBounds = rep(FALSE, 2), seeds = NA, adaptive = list(min = 5, alpha = 0.05, 
 #             method = "gls", complete = TRUE), allowParallel = TRUE)
-   #method: bootstrapping or cross validation. 
+       #method: bootstrapping or cross validation. 
        #boot = bootstrapping, boot632 = bootstrapping(reduce bias) that adjusts for the fact that multiple samples are repeatedly resampled when you're doing sub-sampling 
        #cv = cross-validation, repeatedcv = repeated cross-validation, LOOCV = leave one out cross validation
    #number: number of times to do bootstrapping or cross validation; number of subsamples to take

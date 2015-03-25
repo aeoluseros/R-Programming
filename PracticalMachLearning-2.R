@@ -235,6 +235,24 @@ qplot(predict(modFit,testing),wage,data=testing,xlim=c(50,300),ylim=c(50,300))
 #discriminant function: d(x)_k = - 0.5*miu_k * sigma^(-1) * miu_k + x' * sigma^(-1) * miu_k
    #decide on class based on Y(x)_hat = argmax_k(d(x)_k)
    #we usually estimate parameters with MLE
+data(iris)
+cols=c(rgb(1,0,0,alpha=.5),rgb(0,1,0,alpha=.5),rgb(0,0,1,alpha=.5))
+pairs(iris[,1:4],col=cols[as.numeric(iris$Species)],pch=19,gap=0)
+
+fit <- lda(Species~.,iris)
+plot(fit,abbrev=TRUE)
+fit
+
+table(predict(fit)$class,iris$Species)
+
+ind <- c(sample(which(iris$Species=="setosa"),5),
+         sample(which(iris$Species=="versicolor"),5),
+         sample(which(iris$Species=="virginica"),5))
+Train <- iris[ind,]
+Test <- iris[-ind,]
+fit <- lda(Species~.,Train)
+pred <- predict(fit,Test)
+table(pred$class,Test$Species)
 
 #Naive Bayes - does something more to simplify the problem
 #logic: suppose we have many predictors: we would want to model: P(Y=k|X1,...,Xm)
@@ -244,7 +262,7 @@ qplot(predict(modFit,testing),wage,data=testing,xlim=c(50,300),ylim=c(50,300))
                                    # = pi_k * P(X1|Y=k)* P(X2|X1,Y=k)* P(X3,...,Xm|X1, X2,Y=k)
                                    # = pi_k * P(X1|Y=k)* P(X2|X1,Y=k)* ... * P(Xm|X1, X2, ..., Xm-1,Y=k)
                                    # = pi_k * P(X1|Y=k)* P(X2|Y=k)*... * P(Xm|Y=k)  because all of predictors are independent
-data(iris);library((ggplot2))
+data(iris);library(ggplot2)
 names(iris)
 table(iris$Species)
 inTrain<-createDataPartition(iris$Species,p=0.7,list=FALSE)
@@ -342,41 +360,157 @@ legend("topright", c("Train", "Test"), col=c("blue", "red"), pch=1)
         #training data (predicted outcome).
 #look at a new data point X=x*:
 #E[{Y-f(x*)_lambda}^2] = sigma^2 + {E[{f(x*)_lambda}]-f(x*)}^2 + var[f(x0)_lambda]
-                      #= irreducible error + Bias^2 + Variance
+                      #= irreducible error + Bias^2 + Variance of our estimate
+        #trade off bias and variane is the idea of regularized regression
+
+#Another issue for high-dimensional data -- # of predictors is more than # of records/observations
+small=prostate[1:5,]
+lm(lpsa~.,data=small)  #some predictors will get NA's. R not be able to estimate them because more predictors than sample. Design matrix cannot be inverted
+#An approach to this problem
+   #suppose model is Y=f(X)+e; set f(x)_lambda = x'*beta
+   #constrain only lambda coefficients to be nonzero
+   #then selection problem is after choosing lambda, figure out which lambda coefficients to make nonzero
+#Another approach is to regularization for regression
+   #to control variance, we might regularize/shrink the coefficients:
+   #PRSS(beta)=sum{j=1~n}([(Yj-sum{i=1~m}(beta1i * Xij)]^2) + P(lambda;beta). Where PRSS is a penalized form of the sum of squares
+#Penalty reduces complexity, variance.
 
 
 ##
 # ridge regression on prostate dataset
 # ridge regression penalizes the size of the regression coefficients
+# solve: sum{i=1~N}([(Yi-beta0-sum{j=1~p}(betaj * Xij)]^2) + lambda * sum{j=1~p}((betaj)^2)
+   #equivalent to solving: sum{i=1~N}([(Yi-beta0-sum{j=1~p}(betaj * Xij)]^2) subject to sum{j=1~p}((betaj)^2) <= s, where s is inversely proportional to lambda
+#inclusion of lambda makes the problem non-singular even if X'X is not invertible. beta_hat = (X'X+lambda*I)^(-1) * X'y
+#In the special case of an orthonormal design matrix: beta_ridge_hat = beta_OLS/(1+lambda)  -> This illustrates the essential feature of ridge regression: shrinkage
+#Applying the ridge regression penalty has the effect of shrinking the estimates toward zero - introducing bias but reducing the variance of the estimate
+
 #http://web.as.uky.edu/statistics/users/pbreheny/764-F11/notes/9-1.pdf
-library(MASS)
+
+#The benefits of ridge regression are most striking in the presence of multicollinearity
+x1 <- rnorm(20)
+x2 <- rnorm(20,mean=x1,sd=.01)
+y <- rnorm(20,mean=3+x1+x2)
+lm(y~x1+x2)$coef
+lm.ridge(y~x1+x2,lambda=1)
+
+#The variance of the ridge regression estimate is Var(beta_hat)=sigma^2*W*X'*X*W, where W = (X'X+lambda*I)^(-1)
+#the bias of the ridge regression is: Bias(beta_hat) = -lambda*W*beta
+#penalized regression can be interpreted in a Bayesian context,
+#even if the model we fit is exactly correct and follows the exact distribution we specify, we can always obtain a better estimator by shrinking towards zero
+
+####example from UKY.edu
+data(prostate)
+prostate <- prostate[,-ncol(prostate)]
+fit <- lm.ridge(lpsa~.,prostate,lambda=seq(0,100,len=501))
+plot(fit)
+fit$lambda[which.min(fit$GCV)]   #generalized cross-validation value
+## More interesting lambda values
+lam <- c(0,exp(seq(log(0.01),log(1e8),len=201)))
+fit <- lm.ridge(lpsa~.,prostate,lambda=lam)
+## Calculating df
+XX <- scale(model.matrix(lpsa~0+.,prostate),center=fit$xm,scale=fit$scales)
+l <- eigen(crossprod(XX))$values   #crossprod(XX) is equivalent to t(XX)%*%(XX)
+fit$df <- numeric(length(fit$lambda))
+for (i in 1:length(fit$lambda)) fit$df[i] <- sum(l/(l+fit$lambda[i]))
+## Cooler plot
+matplot(c(fit$df,0),rbind(coef(fit)[,-1],0),type="l",lwd=2,lty=1,col="slateblue",xlab="Degrees of freedom",ylab="Coefficients",xlim=c(0,max(fit$df)+1))
+x <- pretty(c(fit$df,0))
+xx <- numeric(length(x))
+xx[1] <- expression(infinity)
+for (i in 2:(length(x)-1)) xx[i] <- round(fit$lambda[which.min(abs(fit$df-x[i]))])
+xx[length(xx)] <- 0
+axis(3,at=pretty(c(fit$df,0)),labels=xx)
+mtext(expression(lambda),line=2.5)
+text(max(x)+0.75,coef(fit)[1,-1],labels=colnames(XX))
+## Model selection - use AIC/BIC or cross validation to choose lambda
+#In order to apply AIC or BIC to the problem of choosing lambda,we will need an estimate of the degrees of freedom
+#Recall that in linear regression: y_hat = H * y, where H was the projection matrix, and tr(H) = p, the degree of freedom
+#Ridge regression is also a linear estimator (y_hat= H * y), with H_ridge=X(X'X+lambda*I)^(-1)*X', and df = tr(H) 
+#we could show that df_ridge=sum(lambda_i/(lambda_i+lambda)), where lambda_i are the eigenvalues of X'X
+#The main point is to note that df is a decreasing function of lambda with df = p at lambda = 0 and df = 0 at lambda = Inf.
+#AIC = n*log(RSS) + 2df
+#BIC = n*log(RSS) + df*log(n)
+n <- nrow(prostate)
+X <- model.matrix(lpsa~.,prostate)
+fit$RSS <- apply(prostate$lpsa-X%*%t(coef(fit)),2,crossprod)
+AIC <- n*log(fit$RSS) + 2*fit$df
+BIC <- n*log(fit$RSS) + log(n)*fit$df
+abline(v=fit$df[which.min(AIC)],col="red")
+abline(v=fit$df[which.min(BIC)],col="green")
+# leave-one-out ("deleted") residuals: y_i - y(-i)_i_hat = r_i/(1-H_ii)
+# calculating H is computationally inefficient. GCV is often used instead, replacing $ H_ii by the average of all diagonal elements
+# GCV = 1/n * sum{i}{[(y_i - y_i_hat)/(1-tr(H)/n)]^2}
+abline(v=fit$df[which.min(fit$GCV)])
+## Other plots
+par(mfrow=c(1,2))
+plot(fit$lambda,fit$df,log="x",type="l",xlab=expression(lambda),ylab="Degrees of freedom",lwd=3,xaxt="n")
+axis(1,at=c(1e-2,1e1,1e4,1e7),labels=c(0.01,10,expression(10^4),expression(10^7)))
+plot(fit$df,fit$RSS,type="l",xlab="Degrees of freedom",ylab="RSS",lwd=3)
+plot(fit$df,AIC-min(AIC),type="l",ylim=c(0,20),lwd=3,col="red",ylab="Criterion - min",xlab="Degrees of freedom")
+lines(fit$df,BIC-min(BIC),type="l",lwd=3,col="green")
+g <- fit$GCV*n^2
+lines(fit$df,g-min(g),type="l",lwd=3)
+par(mfrow=c(1,1))
+## Comparison with OLS
+fit.ols <- lm(lpsa~.,prostate)
+sig2 <- as.numeric(crossprod(fit.ols$residuals)/fit.ols$df.residual)
+b.o <- coef(fit.ols)[-1]
+se.o <- sqrt(diag(vcov(fit.ols)))[-1]
+
+k <- which.min(fit$GCV)
+XX <- cbind(1,scale(model.matrix(lpsa~0+.,prostate),center=fit$xm,scale=fit$scales))
+b.r <- coef(fit)[k,-1]
+l <- fit$lambda[k]
+W <- solve(crossprod(XX)+diag(c(0,rep(l,ncol(XX)-1))))
+V <- sig2*W%*%crossprod(XX)%*%W
+se.r <- sqrt(diag(V))[-1]/fit$scales
+
+z.o <- b.o/se.o
+z.r <- b.r/se.r
+
+
+########### example from lecture note
+library(ElemStatLearn);data(prostate)
+covnames <- names(prostate[-(9:10)])
+y <- prostate$lpsa
+x <- prostate[,covnames]
+form <- as.formula(paste("lpsa~", paste(covnames, collapse="+"), sep=""))
+class(form)  #"formula"
+summary(lm(form, data=prostate[prostate$train,]))
+set.seed(1)
+train.ind <- sample(nrow(prostate), ceiling(nrow(prostate))/2)
+y.test <- prostate$lpsa[-train.ind]
+x.test <- x[-train.ind,]
+y <- prostate$lpsa[train.ind]
+x <- x[train.ind,]
+p <- length(covnames)
+rss <- list()   #create an empty list
 #lambdas <- seq(0,50,len=10)
 lambdas <- seq(0,50,by=0.1)
 M <- length(lambdas)
 train.rss <- rep(0,M)
 test.rss <- rep(0,M)
 betas <- matrix(0,ncol(x),M)
+library(caret);library(lars);library(MASS)
 for(i in 1:M){
         Formula <-as.formula(paste("y~",paste(covnames,collapse="+"),sep=""))
         fit1 <- lm.ridge(Formula,data=x,lambda=lambdas[i])  #lambdas is the penalty factor
-        betas[,i] <- fit1$coef
-        
+        betas[,i] <- fit1$coef        
         scaledX <- sweep(as.matrix(x),2,fit1$xm) #xm: column means of x matrix
          #sweep(x, MARGIN, STATS, FUN = "-", check.margin = TRUE, ...) #default is substract
         scaledX <- sweep(scaledX,2,fit1$scale,"/")
          #devide by fit1$scale
         #xm<-apply(x,2,mean)  # same with fit1$xm
         #could just use: scaledX<-apply(x,2,scale)  #slightly different from sweep due to precision.
-        
         yhat <- scaledX%*%fit1$coef+fit1$ym
         train.rss[i] <- sum((y - yhat)^2)
-        
         scaledX <- sweep(as.matrix(x.test),2,fit1$xm)
         scaledX <- sweep(scaledX,2,fit1$scale,"/")
         yhat <- scaledX%*%fit1$coef+fit1$ym
         test.rss[i] <- sum((y.test - yhat)^2)
 }
-
+par(mfrow=c(1,1))
 #png(file="./PracticalMachLearning/selection-plots-02.png", width=432, height=432, pointsize=12) 
 plot(lambdas,test.rss,type="l",col="red",lwd=2,ylab="RSS",ylim=range(train.rss,test.rss))
 lines(lambdas,train.rss,col="blue",lwd=2,lty=2)
@@ -385,13 +519,16 @@ abline(v=best.lambda+1/9)
 legend(30,30,c("Train","Test"),col=c("blue","red"),lty=c(2,1))
 #dev.off()
 
-png(file="./PracticalMachLearning/selection-plots-03.png", width=432, height=432, pointsize=8) 
+#png(file="./PracticalMachLearning/selection-plots-03.png", width=432, height=432, pointsize=8) 
 plot(lambdas,betas[1,],ylim=range(betas),type="n",ylab="Coefficients")
 for(i in 1:ncol(x))
         lines(lambdas,betas[i,],type="b",lty=i,pch=as.character(i))
 abline(h=0)
 legend("topright",covnames,pch=as.character(1:8),cex = 0.6)
-dev.off()
+#dev.off()
+#from the plot we could see that: we set off with the betas being equal to those in standard OLS when lambda's equal to 0;
+   #as lambda increases, all of the coefficients get closer to 0. Because we penalize the coefficient, and make them smaller
+#so the tuning parameter lambda controls the size of the coefficients and the amount of regularization.
 
 
 #######
@@ -399,30 +536,46 @@ dev.off()
 #http://statweb.stanford.edu/~tibs/lasso/simple.html
 #Give a set of input measurements x1, x2 ...xp and an outcome measurement y, the lasso fits a linear model 
 #yhat=b0 + b1*x1+ b2*x2 + ... bp*xp 
-#The criterion it uses is: Minimize sum( (y-yhat)^2 ) subject to sum[absolute value(bj)] <= s 
+#The criterion it uses is: Minimize sum{i=1~N}([(Yi-beta0-sum{j=1~p}(betaj * Xij)]^2) subject to sum{j=1~p}|beta_j| <= s 
 #The first sum is taken over observations (cases) in the dataset. The bound "s" is a tuning parameter. 
 #When "s" is large enough, the constraint has no effect and the solution is just the usual multiple linear least squares regression of y on x1, x2, ...xp. 
-#However when for smaller values of s (s>=0) the solutions are shrunken versions 
-#of the least squares estimates. Often, some of the coefficients bj are zero. 
+#However when for smaller values of s (s>=0) the solutions are shrunken versions of the least squares estimates. Often, some of the coefficients bj are zero. 
 
-#Choosing "s" is like choosing the number of predictors to use in a regression model, and cross-validation is a good tool for estimating the best value for "s". 
+#for orthonormal design matrix, this has a closed form solution: 
+   #beta_j_hat = sign(beta_j_hat_OLS)(|beta_j_hat_OLS|-gamma)^(+), 
+      #where (x)^(+) = x when x>0, (x)^(+) = 0, is x<=0; gamma = s/2 
+
+
+#Choosing "s" is like choosing the number of predictors to use in a regression model, and 
+   #cross-validation is a good tool for estimating the best value for "s". 
 
 #The computation of the lasso solutions is a quadratic programming problem , and 
-#can be tackled by standard numerical analysis algorithms. But the least angle 
-#regression procedure is a better approach.
+   #can be tackled by standard numerical analysis algorithms. But the least angle 
+   #regression procedure is a better approach.
 
 #The least angle regression procedure follows the same general scheme with 
-#forward stepwise regression, but doesn't add a predictor fully into the model. 
-#The coefficient of that predictor is increased only until that predictor is no 
-#longer the one most correlated with the residual r. Then some other competing 
-#predictor is invited to "join the club". 
-  #Start with all coefficients bj equal to zero.
-  #Find the predictor xj most correlated with y
-  #Increase the coefficient bj in the direction of the sign of its correlation with y. Take residuals r=y-yhat along the way. Stop when some other predictor xk has as much correlation with r as xj has.
-  #Increase (bj, bk) in their joint least squares direction, until some other predictor xm has as much correlation with the residual r.
-  #Continue until: all predictors are in the model
-
-if(!require("lars")){install.packages("lars")}
+   #forward stepwise regression, but doesn't add a predictor fully into the model. 
+   #The coefficient of that predictor is increased only until that predictor is no 
+   #longer the one most correlated with the residual r. Then some other competing 
+   #predictor is invited to "join the club". 
+     #Start with all coefficients bj equal to zero.
+     #Find the predictor xj most correlated with y
+     #Increase the coefficient bj in the direction of the sign of its correlation with y. Take residuals r=y-yhat along the way. Stop when some other predictor xk has as much correlation with r as xj has.
+     #Increase (bj, bk) in their joint least squares direction, until some other predictor xm has as much correlation with the residual r.
+     #Continue until: all predictors are in the model
+library(ElemStatLearn);data(prostate);library(MASS);library(caret)
+covnames <- names(prostate[-(9:10)])
+y <- prostate$lpsa
+x <- prostate[,covnames]
+form <- as.formula(paste("lpsa~", paste(covnames, collapse="+"), sep=""))
+set.seed(1)
+train.ind <- sample(nrow(prostate), ceiling(nrow(prostate))/2)
+y.test <- prostate$lpsa[-train.ind]
+x.test <- x[-train.ind,]
+y <- prostate$lpsa[train.ind]
+x <- x[train.ind,]
+p <- length(covnames)
+rss <- list()   #create an empty list
 library(lars)  #(LARS: Least angle regression)
 lasso.fit <- lars(as.matrix(x), y, type="lasso", trace=TRUE)
 
@@ -432,16 +585,53 @@ legend("topleft", covnames, pch=8, lty=1:length(covnames), col=1:length(covnames
 #dev.off()
 
 # this plots the cross validation curve
-png(file="./PracticalMachLearning/selection-plots-05.png", width=432, height=432, pointsize=12) 
+#png(file="./PracticalMachLearning/selection-plots-05.png", width=432, height=432, pointsize=12) 
 lasso.cv <- cv.lars(as.matrix(x), y, K=10, type="lasso", trace=TRUE)
-dev.off()
+#dev.off()
 
 
 
 
+## Prostate data
+library(glmnet)  #fit a GLM with lasso or elasticnet regularization
+data(prostate)
+prostate <- prostate[,-ncol(prostate)]
+X <- model.matrix(lpsa~0+.,prostate)
+y <- prostate$lpsa
+fit <- glmnet(X,y)
+plot(fit)
+cvfit <- cv.glmnet(X,y)   #Cross-validation for glmnet, default is 10 folds
+plot(cvfit)
+coef(fit,s=cvfit$lambda.min)
+
+lam <- c(0,exp(seq(log(0.01),log(1e8),len=201)))
+fit <- lm.ridge(lpsa~.,prostate,lambda=lam)
+l <- apply(coef(fit)[,-1]^2,1,sum)
+s <- l/max(l)
+matplot(c(s,0),rbind(coef(fit)[,-1],0),type="l",lwd=2,lty=1,col="slateblue",xlab="",ylab="Coefficients",xlim=c(0,1.15),ylim=c(-0.1,0.8),main="Ridge")
+text(1.1,coef(fit)[1,-1],labels=colnames(X),cex=0.8)
+mtext(expression(sum(beta[j]^2)/max(sum(beta[j]^2))),1,line=3)
+
+cvfit <- cv.glmnet(X,y)
+fit <- glmnet(X,y,lambda.min=0,nlambda=501)
+l <- apply(abs(coef(fit)[-1,]),2,sum)
+s <- l/max(l)
+matplot(s,t(as.matrix(coef(fit)[-1,])),type="l",lwd=2,lty=1,col="slateblue",xlab="",ylab="Coefficients",xlim=c(0,1.15),ylim=c(-0.1,0.8),main="Lasso")
+text(1.1,coef(fit)[-1,length(fit$lambda)],labels=colnames(X),cex=0.8)
+mtext(expression(sum(abs(beta[j]))/max(sum(abs(beta[j])))),1,line=3)
+## Selection of lambda
+b <- coef(fit,cvfit$lambda.min)[-1]
+abline(v=sum(abs(b))/max(l),col="gray80")
+RSS <- apply(predict(fit,newx=X)-y,2,crossprod)
+n <- length(y)
+AIC <- n*log(RSS) + 2*fit$df
+BIC <- n*log(RSS) + log(n)*fit$df
+GCV <- RSS/n/(1-fit$df/n)^2
+abline(v=s[which.min(AIC)],col=rgb(1,.5,.5))
+abline(v=s[which.min(BIC)],col=rgb(.5,1,.5))
 
 
-
+#there is also relaxo method in caret!!
 
 
 
