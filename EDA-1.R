@@ -446,6 +446,7 @@ library(ggplot2)
 #####data has to be organized as data frame
 #factors should be labeled to be informative
 
+
 #(1) qplot
 #Hello World for GGplot2
 str(mpg)
