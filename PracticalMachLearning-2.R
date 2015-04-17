@@ -381,7 +381,7 @@ lm(lpsa~.,data=small)  #some predictors will get NA's. R not be able to estimate
 # ridge regression penalizes the size of the regression coefficients
 # solve: sum{i=1~N}([(Yi-beta0-sum{j=1~p}(betaj * Xij)]^2) + lambda * sum{j=1~p}((betaj)^2)
    #equivalent to solving: sum{i=1~N}([(Yi-beta0-sum{j=1~p}(betaj * Xij)]^2) subject to sum{j=1~p}((betaj)^2) <= s, where s is inversely proportional to lambda
-#inclusion of lambda makes the problem non-singular even if X'X is not invertible. beta_hat = (X'X+lambda*I)^(-1) * X'y
+#inclusion of lambda makes the problem non-singular even if X'X is not invertible (colinearity). beta_hat = (X'X+lambda*I)^(-1) * X'y
 #In the special case of an orthonormal design matrix: beta_ridge_hat = beta_OLS/(1+lambda)  -> This illustrates the essential feature of ridge regression: shrinkage
 #Applying the ridge regression penalty has the effect of shrinking the estimates toward zero - introducing bias but reducing the variance of the estimate
 
@@ -452,6 +452,7 @@ lines(fit$df,BIC-min(BIC),type="l",lwd=3,col="green")
 g <- fit$GCV*n^2
 lines(fit$df,g-min(g),type="l",lwd=3)
 par(mfrow=c(1,1))
+
 ## Comparison with OLS
 fit.ols <- lm(lpsa~.,prostate)
 sig2 <- as.numeric(crossprod(fit.ols$residuals)/fit.ols$df.residual)

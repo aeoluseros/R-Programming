@@ -34,9 +34,7 @@ download.file(fileUrl,destfile="./GetAndCleanData/camera.xlsx",mode="wb")
     #care is needed that other binary file types are transferred with mode = "wb".
 list.files("./GetAndCleanData")
 dateDownloaded<-date()
-if(!require("xlsx")){
-        install.packages("xlsx")
-}
+if(!require("xlsx")){install.packages("xlsx")}
 library("xlsx")
 cameraData<-read.xlsx("./GetAndCleanData/camera.xlsx",sheetIndex=1,header=TRUE)
 #read.xlsx2 is much faster than read.xlsx but for reading subsets of rows may be slightly 
@@ -51,12 +49,10 @@ cameraDataSubset
 write.xlsx(cameraDataSubset, "./GetAndCleanData/cameraDataSubset.xlsx") 
 
 #package XLConnect
-if(!require("XLConnect")){
-        install.packages("XLConnect")
-}
+if(!require("XLConnect")){install.packages("XLConnect")}
 library("XLConnect")
 vignette ("XLConnect")  #user manual
-wb = loadWorkbook("./GetAndCleanData/camera.xlsx", create = TRUE)
+wb = loadWorkbook("./GetAndCleanData/camera.xlsx", create = TRUE)  #can also create spreadsheet
 createSheet(wb, name = "womenData")
 createName(wb, name = "womenName", formula = "womenData!$A$1", overwrite = TRUE)
 writeNamedRegion(wb, women, name = "womenName") #women is a small embedded dataset

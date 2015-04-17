@@ -211,7 +211,9 @@ plot(svd1$d^2/sum(svd1$d^2),xlab="column",ylab="Prop. of Variance Explained",pch
 svd1<-svd(scale(dataMatrixOrdered))
 pca1<-prcomp(dataMatrixOrdered,scale=TRUE)
 #prcomp's result:
-   #sdev: the standard deviations of the principal components (i.e., the square roots of the eigenvalues of the covariance/correlation matrix, though the calculation is actually done with the singular values of the data matrix).
+   #sdev: the standard deviations of the principal components (i.e., the square roots of the 
+         #eigenvalues of the covariance/correlation matrix, though the calculation is actually done 
+         #with the singular values of the data matrix).
    #rotation: the matrix of variable loadings (i.e., a matrix whose columns contain the eigenvectors).
    #x: if retx is true the value of the rotated data (the centred (and scaled if requested) data multiplied by the rotation matrix) is returned. Hence, cov(x) is the diagonal matrix diag(sdev^2).
 str(pca1)
